@@ -155,7 +155,7 @@ class CHARM_AD(BaseDetector):
         self.normalize = normalize
 
         self.client = CharmClient(
-            base_url="http://34.136.144.179:8080",
+            base_url="http://ab778f946c58843afa52a72d5af0657a-1381817648.us-west-2.elb.amazonaws.com:8080",
             timeout=120,
         )
         self.train_embeddings_ = None
