@@ -5,7 +5,7 @@ import numpy as np
 from .utils.slidingWindows import find_length_rank
 
 Unsupervise_AD_Pool = ['FFT', 'SR', 'NORMA', 'Series2Graph', 'Sub_IForest', 'IForest', 'LOF', 'Sub_LOF', 'POLY', 'MatrixProfile', 'Sub_PCA', 'PCA', 'HBOS',
-                        'Sub_HBOS', 'KNN', 'Sub_KNN','KMeansAD', 'KMeansAD_U', 'KShapeAD', 'COPOD', 'CBLOF', 'COF', 'EIF', 'RobustPCA', 'Lag_Llama', 'TimesFM', 'Chronos', 'MOMENT_ZS', 'TSPulse_ZS']
+                        'Sub_HBOS', 'KNN', 'Sub_KNN','KMeansAD', 'KMeansAD_U', 'KShapeAD', 'COPOD', 'CBLOF', 'COF', 'EIF', 'RobustPCA', 'Lag_Llama', 'TimesFM', 'Chronos', 'MOMENT_ZS', 'TSPulse_ZS', 'MMPAD']
 Semisupervise_AD_Pool = ['Left_STAMPi', 'SAND', 'MCD', 'Sub_MCD', 'OCSVM', 'Sub_OCSVM', 'AutoEncoder', 'CNN', 'LSTMAD', 'TranAD', 'USAD', 'OmniAnomaly', 'PatchTST',
                         'AnomalyTransformer', 'TimesNet', 'FITS', 'Donut', 'OFA', 'MOMENT_FT', 'M2N2', 'TSPulse_FT', 'xLSTMAD']
 
@@ -476,4 +476,16 @@ def run_xLSTMAD(data_train, data_test, window_size=100, lr=0.005, batch_size=32,
     clf = xLSTMAD(model=model, window_size=window_size, batch_size=batch_size)
     clf.fit(data_train)
     score = clf.decision_function(data_test)
+    return score.ravel()
+
+
+def run_MMPAD(data, periodicity=1, n_dim=None, n_neighbor=1,
+              sorting_place='pre', mode='discord', post_processing=2, 
+              n_job=None, backend=None):
+    from .models.MMPAD import MMPAD
+    clf = MMPAD(periodicity=periodicity, n_dim=n_dim, n_neighbor=n_neighbor,
+                sorting_place=sorting_place, mode=mode, post_processing=post_processing, 
+                n_job=n_job, backend=backend)
+    clf.fit(data)
+    score = clf.decision_scores_
     return score.ravel()

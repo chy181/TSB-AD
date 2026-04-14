@@ -89,7 +89,11 @@ Multi_algo_HP_dict = {
         'window_size': [50, 100, 150],
         'lr': [0.001],
         'embedding_dim': [20, 40],
-    }
+    },
+    'MMPAD': {
+        'n_dim': [1, 0.1, 0.3, 0.5, 0.7],
+        'n_neighbor': [1, 5, 10, 15],
+    },
 }
 
 
@@ -120,6 +124,7 @@ Optimal_Multi_algo_HP_dict = {
     'FITS': {'win_size': 100, 'lr': 0.001},
     'OFA': {'win_size': 50},
     'xLSTMAD': {'window_size': 50, 'lr': 0.001, 'embedding_dim': 40},
+    'MMPAD': {'n_dim': 0.7, 'n_neighbor': 15},
 }
 
 
@@ -244,7 +249,10 @@ Uni_algo_HP_dict = {
         'window_size': [50, 100, 150],
         'lr': [0.0005, 0.001],
         'embedding_dim': [20, 40],
-    }
+    },
+    'MMPAD': {
+        'n_neighbor': [1, 5, 10, 15],
+    },
 }
 
 Optimal_Uni_algo_HP_dict = {
@@ -291,4 +299,5 @@ Optimal_Uni_algo_HP_dict = {
                    'prediction_mode': 'time',
                    'lr': 1e-4},
     'xLSTMAD': {'window_size': 50, 'lr': 0.001, 'embedding_dim': 40},
+    'MMPAD': {'n_neighbor': 5},
 }
