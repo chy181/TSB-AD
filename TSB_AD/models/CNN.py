@@ -14,7 +14,7 @@ class AdaptiveConcatPool1d(nn.Module):
     def __init__(self):
         super().__init__()
         self.ap = torch.nn.AdaptiveAvgPool1d(1)
-        self.mp = torch.nn.AdaptiveAvgPool1d(1)
+        self.mp = torch.nn.AdaptiveMaxPool1d(1)
     
     def forward(self, x):
         return torch.cat([self.ap(x), self.mp(x)], 1)
@@ -50,7 +50,7 @@ class CNNModel(nn.Module):
         self.conv_layers = nn.Sequential()
         prev_channels = self.n_features
 
-        for idx, out_channels in enumerate(self.num_channel[:-1]):
+        for idx, _ in enumerate(self.num_channel[:-1]):
             self.conv_layers.add_module(
                 "conv" + str(idx),
                 torch.nn.Conv1d(prev_channels, self.num_channel[idx + 1], 
@@ -58,7 +58,7 @@ class CNNModel(nn.Module):
             self.conv_layers.add_module(self.hidden_activation + str(idx),
                                     self.activation)
             self.conv_layers.add_module("pool" + str(idx), nn.MaxPool1d(kernel_size=2))
-            prev_channels = out_channels
+            prev_channels = self.num_channel[idx + 1]
 
         self.fc = nn.Sequential(
             AdaptiveConcatPool1d(),
@@ -66,20 +66,14 @@ class CNNModel(nn.Module):
             torch.nn.Linear(2*self.num_channel[-1], self.num_channel[-1]),
             torch.nn.ReLU(),
             torch.nn.Dropout(dropout_rate),
-            torch.nn.Linear(self.num_channel[-1], self.n_features)
+            torch.nn.Linear(self.num_channel[-1], self.n_features * self.predict_time_steps)
         )
 
     def forward(self, x):
         b, l, c = x.shape
         x = x.view(b, c, l)
-        x = self.conv_layers(x)     # [128, feature, 23]
-
-        outputs = torch.zeros(self.predict_time_steps, b, self.n_features).to(self.device)
-        for t in range(self.predict_time_steps):
-            decoder_input = self.fc(x)
-            outputs[t] = torch.squeeze(decoder_input, dim=-2)
-
-        return outputs
+        x = self.conv_layers(x)
+        return self.fc(x)  # [batch, n_features * predict_time_steps]
     
 class CNN():
     def __init__(self,
@@ -190,7 +184,7 @@ class CNN():
             self.scheduler.step()
             
             self.early_stopping(valid_loss, self.model)
-            if self.early_stopping.early_stop or epoch == self.epochs - 1:
+            if self.early_stopping.early_stop or epoch == self.epochs:
                 # fitting Gaussian Distribution
                 if len(scores) > 0:
                     scores = torch.cat(scores, dim=0)
@@ -257,6 +251,8 @@ class CNN():
             padded_decision_scores_ = np.zeros(len(data))
             padded_decision_scores_[: self.window_size+self.pred_len-1] = scores[0]
             padded_decision_scores_[self.window_size+self.pred_len-1 : ] = scores
+        else:
+            padded_decision_scores_ = scores
 
         self.__anomaly_score = padded_decision_scores_
         return padded_decision_scores_
