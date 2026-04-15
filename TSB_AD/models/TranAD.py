@@ -158,6 +158,9 @@ class TranAD(BaseDetector):
         self.early_stopping = EarlyStoppingTorch(None, patience=patience)
 
     def fit(self, data):
+        self.scaler = MinMaxScaler()
+        data = self.scaler.fit_transform(data)
+
         tsTrain = data[:int((1-self.validation_size)*len(data))]
         tsValid = data[int((1-self.validation_size)*len(data)):]
 
@@ -243,6 +246,8 @@ class TranAD(BaseDetector):
                 break
 
     def decision_function(self, data):
+        data = self.scaler.transform(data)
+
         test_loader = DataLoader(
             dataset=ReconstructDataset(data, window_size=self.win_size),
             batch_size=self.batch_size,
