@@ -1,0 +1,2 @@
+file,datasource,HP,adapter_mode,timercd_mode,AUC-PR
+001_NAB_id_1_Facility_tr_1007_1st_2014.csv,NAB,"{""fusion"": [""add""], ""norm"": [""zscore""], ""w_adapter"": [0.2], ""w_rcd"": [0.8], ""win_size"": [512]}",checkpoint,model_suffix_prefix_zero,0.13412592079989794

@@ -1,0 +1,8 @@
+{
+  "num_datasets": 1,
+  "num_sources": 1,
+  "mean_auc_pr": 0.13409912488648518,
+  "median_auc_pr": 0.13409912488648518,
+  "elapsed_sec": 39.268237590789795,
+  "config": "eps01_zscore_add_source_level"
+}

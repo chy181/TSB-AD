@@ -11,3 +11,5 @@ TSB_AD/models/KShapeAD_tslearn.py
 TSB_AD/main_M.py
 benchmark_exp/thresh/
 dist/
+checkpoints/
+Datasets/
