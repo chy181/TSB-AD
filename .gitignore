@@ -13,3 +13,4 @@ benchmark_exp/thresh/
 dist/
 checkpoints/
 Datasets/
+*.zip

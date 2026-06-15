@@ -22,29 +22,29 @@ from TSB_AD.models.TimeRCD_MAFT import TimeRCD_MAFT
 
 
 SOURCE_HP_CONFIG = {
-    "CATSV2": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "DAPHNET": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "EXATHLON": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "IOPS": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.5], "w_rcd": [0.5]},
-    "LTDB": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "MGAB": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.01], "w_rcd": [0.99]},
-    "MITDB": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.1], "w_rcd": [0.9]},
-    "MSL": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.5], "w_rcd": [0.5]},
-    "NAB": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.2], "w_rcd": [0.8]},
-    "NEK": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "OPPORTUNITY": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.6], "w_rcd": [0.4]},
-    "POWER": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.01], "w_rcd": [0.99]},
-    "SED": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.5], "w_rcd": [0.5]},
-    "SMAP": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.2], "w_rcd": [0.8]},
-    "SMD": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "STOCK": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "SVDB": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "SWAT": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.9], "w_rcd": [0.1]},
-    "TAO": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "TODS": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.1], "w_rcd": [0.9]},
-    "UCR": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.1], "w_rcd": [0.9]},
-    "WSD": {"win_size": [512], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.99], "w_rcd": [0.01]},
-    "YAHOO": {"win_size": [64], "norm": ["zscore"], "fusion": ["add"], "w_adapter": [0.01], "w_rcd": [0.99]},
+    "CATSV2": {"win_size": [64], "weight": [0.99]},
+    "DAPHNET": {"win_size": [512], "weight": [0.99]},
+    "EXATHLON": {"win_size": [64], "weight": [0.99]},
+    "IOPS": {"win_size": [64], "weight": [0.5]},
+    "LTDB": {"win_size": [512], "weight": [0.99]},
+    "MGAB": {"win_size": [64], "weight": [0.01]},
+    "MITDB": {"win_size": [64], "weight": [0.1]},
+    "MSL": {"win_size": [64], "weight": [0.5]},
+    "NAB": {"win_size": [512], "weight": [0.2]},
+    "NEK": {"win_size": [64], "weight": [0.99]},
+    "OPPORTUNITY": {"win_size": [64], "weight": [0.6]},
+    "POWER": {"win_size": [64], "weight": [0.01]},
+    "SED": {"win_size": [64], "weight": [0.5]},
+    "SMAP": {"win_size": [64], "weight": [0.2]},
+    "SMD": {"win_size": [512], "weight": [0.99]},
+    "STOCK": {"win_size": [64], "weight": [0.99]},
+    "SVDB": {"win_size": [64], "weight": [0.99]},
+    "SWAT": {"win_size": [512], "weight": [0.9]},
+    "TAO": {"win_size": [512], "weight": [0.99]},
+    "TODS": {"win_size": [64], "weight": [0.1]},
+    "UCR": {"win_size": [512], "weight": [0.1]},
+    "WSD": {"win_size": [512], "weight": [0.99]},
+    "YAHOO": {"win_size": [64], "weight": [0.01]},
 }
 
 
@@ -112,6 +112,8 @@ def evaluate_one(args, filename):
         timercd_win_size=args.timercd_win_size,
         timercd_batch_size=args.timercd_batch_size,
         device=args.device,
+        norm=args.norm,
+        fusion=args.fusion,
     )
     score = model.fit_predict_score(filename, data)
     metric = auc_pr(label, score)
@@ -150,8 +152,8 @@ def main():
     parser = argparse.ArgumentParser(description="HP Tuning for fixed TimeRCD + MultiAdapter AUC-PR fusion")
     parser.add_argument("--dataset_dir", type=str, default="Datasets/TSB-AD-U")
     parser.add_argument("--file_lsit", "--file_list", dest="file_list", type=str, default="Datasets/File_List/TSB-AD-U-Eva.csv")
-    parser.add_argument("--save_dir", type=str, default="benchmark_exp/eval/HP_tuning/uni_ma")
-    parser.add_argument("--AD_Name", type=str, default="TimeRCD_MultiAdapter_FT")
+    parser.add_argument("--save_dir", type=str, default="benchmark_exp/eval/HP_tuning/uni_ma_eps01")
+    parser.add_argument("--AD_Name", type=str, default="TimeRCD_MultiAdapter_FT_eps01")
     parser.add_argument(
         "--adapter_mode",
         choices=["train", "checkpoint", "score", "auto"],
@@ -184,6 +186,8 @@ def main():
     parser.add_argument("--timercd_win_size", type=int, default=15000)
     parser.add_argument("--timercd_batch_size", type=int, default=64)
     parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--norm", choices=["zscore"], default="zscore")
+    parser.add_argument("--fusion", choices=["add"], default="add")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
 
@@ -200,6 +204,7 @@ def main():
     print(f"Adapter mode: {args.adapter_mode}")
     print("TimeRCD mode: model_suffix_prefix_zero")
     print(f"TimeRCD win_size: {args.timercd_win_size}")
+    print(f"Fusion: {args.norm} + {args.fusion}")
     print(f"Metric: AUC-PR")
 
     file_list = pd.read_csv(args.file_list)["file_name"].tolist()
