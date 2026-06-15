@@ -95,6 +95,84 @@ The default dataset directory is:
 Datasets/TSB-AD-U
 ```
 
+## Data Preparation
+
+Download the univariate TSB-AD-U dataset from the official TSB-AD release:
+
+```text
+https://www.thedatum.org/datasets/TSB-AD-U.zip
+```
+
+Place and unzip it under the repository's `Datasets` directory:
+
+```bash
+mkdir -p Datasets
+wget -O Datasets/TSB-AD-U.zip https://www.thedatum.org/datasets/TSB-AD-U.zip
+unzip Datasets/TSB-AD-U.zip -d Datasets/
+```
+
+After extraction, the dataset CSV files should be available under:
+
+```text
+Datasets/TSB-AD-U/
+```
+
+The benchmark uses the evaluation split file:
+
+```text
+Datasets/File_List/TSB-AD-U-Eva.csv
+```
+
+If the file list is missing, download it from the official TSB-AD repository and place it under `Datasets/File_List/`:
+
+```bash
+mkdir -p Datasets/File_List
+wget -O Datasets/File_List/TSB-AD-U-Eva.csv \
+  https://raw.githubusercontent.com/TheDatumOrg/TSB-AD/main/Datasets/File_List/TSB-AD-U-Eva.csv
+```
+
+You can verify the dataset layout with:
+
+```bash
+ls Datasets/TSB-AD-U | head
+test -f Datasets/File_List/TSB-AD-U-Eva.csv
+```
+
+## Checkpoint Preparation
+
+Download the MAFT checkpoints from Google Drive:
+
+```text
+https://drive.google.com/file/d/1cJCYxl5dGIm79tEDC2iGDaWU7_qUr3kv/view?usp=drive_link
+```
+
+Unzip the archive and place the files under:
+
+```text
+checkpoints/MAFT/
+```
+
+The directory should contain checkpoint files such as:
+
+```text
+checkpoints/MAFT/*_MultiAdapter_FT_win64_lr0.001.pt
+checkpoints/MAFT/*_MultiAdapter_FT_win512_lr0.001.pt
+```
+
+Download the TimeRCD pretrained checkpoint from Hugging Face:
+
+```bash
+mkdir -p checkpoints/time-rcd
+wget -O checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth \
+  https://huggingface.co/thu-sail-lab/Time-RCD/resolve/main/best_model/pretrain_checkpoint_best_uni.pth
+```
+
+After preparation, the TimeRCD checkpoint should be located at:
+
+```text
+checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth
+```
+
 ## Use Saved MAFT Checkpoints
 
 Use checkpoint mode when you want to run MAFT from saved adapter weights:
