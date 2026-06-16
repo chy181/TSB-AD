@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from TSB_AD.models.TimeRCD_MAFT import TimeRCD_MAFT
+from TSB_AD.models.TimeRCD_MAFT import run_maft
 
 
 SOURCE_HP_CONFIG = {
@@ -102,20 +102,18 @@ def evaluate_one(args, filename):
     label = df.iloc[:, -1].to_numpy(dtype=int)
     config = SOURCE_HP_CONFIG[source]
 
-    model = TimeRCD_MAFT(
-        source_config=config,
-        adapter_mode=args.adapter_mode,
-        adapter_checkpoint_dir=args.adapter_checkpoint_dir,
-        adapter_score_dir=args.adapter_score_dir,
-        timercd_checkpoint=args.timercd_checkpoint,
-        timercd_model_id=args.timercd_model_id,
-        timercd_win_size=args.timercd_win_size,
-        timercd_batch_size=args.timercd_batch_size,
+    score = run_maft(
+        filename=filename,
+        data=data,
+        win_size=hp_scalar(config, "win_size"),
+        weight=hp_scalar(config, "weight"),
+        lr_adapter=args.lr_adapter,
+        epochs_adapter=args.epochs_adapter,
+        mode=args.adapter_mode,
         device=args.device,
-        norm=args.norm,
-        fusion=args.fusion,
+        timercd_win_size=args.timercd_win_size,
+        timercd_checkpoint=args.timercd_checkpoint,
     )
-    score = model.fit_predict_score(filename, data)
     metric = auc_pr(label, score)
 
     return {
@@ -163,48 +161,23 @@ def main():
             "score: use cached .npy; auto: checkpoint then score fallback."
         ),
     )
-    parser.add_argument(
-        "--adapter_checkpoint_dir",
-        type=str,
-        default="checkpoints/MAFT",
-    )
-    parser.add_argument(
-        "--adapter_score_dir",
-        type=str,
-        default="benchmark_exp/eval/raw_scores/MultiAdapter_FT_win64_512_all_scores",
-    )
-    parser.add_argument(
-        "--timercd_checkpoint",
-        type=str,
-        default="checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-    )
-    parser.add_argument(
-        "--timercd_model_id",
-        type=str,
-        default="checkpoints/time-rcd",
-    )
-    parser.add_argument("--timercd_win_size", type=int, default=15000)
-    parser.add_argument("--timercd_batch_size", type=int, default=64)
     parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--norm", choices=["zscore"], default="zscore")
-    parser.add_argument("--fusion", choices=["add"], default="add")
+    parser.add_argument("--lr_adapter", type=float, default=0.001)
+    parser.add_argument("--epochs_adapter", type=int, default=5)
+    parser.add_argument("--timercd_win_size", type=int, default=15000)
+    parser.add_argument("--timercd_checkpoint", type=str, default="checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth")
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
 
     args.dataset_dir = resolve_path(args.dataset_dir)
     args.file_list = resolve_path(args.file_list)
-    args.adapter_checkpoint_dir = resolve_path(args.adapter_checkpoint_dir)
-    args.adapter_score_dir = resolve_path(args.adapter_score_dir)
     args.timercd_checkpoint = resolve_path(args.timercd_checkpoint)
-    args.timercd_model_id = resolve_path(args.timercd_model_id)
     args.save_dir = resolve_path(args.save_dir)
 
     print("CUDA available: ", torch.cuda.is_available())
     print("cuDNN version: ", torch.backends.cudnn.version())
     print(f"Adapter mode: {args.adapter_mode}")
-    print("TimeRCD mode: model_suffix_prefix_zero")
     print(f"TimeRCD win_size: {args.timercd_win_size}")
-    print(f"Fusion: {args.norm} + {args.fusion}")
     print(f"Metric: AUC-PR")
 
     file_list = pd.read_csv(args.file_list)["file_name"].tolist()
