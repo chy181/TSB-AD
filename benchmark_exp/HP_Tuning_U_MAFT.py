@@ -27,31 +27,30 @@ from TSB_AD.model_wrapper import (
 from TSB_AD.utils.slidingWindows import find_length_rank
 
 
-SOURCE_HP_CONFIG = {
-    "CATSV2": {"win_size": [64], "weight": [0.99]},
-    "DAPHNET": {"win_size": [512], "weight": [0.99]},
-    "EXATHLON": {"win_size": [64], "weight": [0.99]},
-    "IOPS": {"win_size": [64], "weight": [0.5]},
-    "LTDB": {"win_size": [512], "weight": [0.99]},
-    "MGAB": {"win_size": [64], "weight": [0.01]},
-    "MITDB": {"win_size": [64], "weight": [0.1]},
-    "MSL": {"win_size": [64], "weight": [0.5]},
-    "NAB": {"win_size": [512], "weight": [0.2]},
-    "NEK": {"win_size": [64], "weight": [0.99]},
-    "OPPORTUNITY": {"win_size": [64], "weight": [0.6]},
-    "POWER": {"win_size": [64], "weight": [0.01]},
-    "SED": {"win_size": [64], "weight": [0.5]},
-    "SMAP": {"win_size": [64], "weight": [0.2]},
-    "SMD": {"win_size": [512], "weight": [0.99]},
-    "STOCK": {"win_size": [64], "weight": [0.99]},
-    "SVDB": {"win_size": [64], "weight": [0.99]},
-    "SWAT": {"win_size": [512], "weight": [0.9]},
-    "TAO": {"win_size": [512], "weight": [0.99]},
-    "TODS": {"win_size": [64], "weight": [0.1]},
-    "UCR": {"win_size": [512], "weight": [0.1]},
-    "WSD": {"win_size": [512], "weight": [0.99]},
-    "YAHOO": {"win_size": [64], "weight": [0.01]},
-}
+SOURCE_HP_CONFIG = {'CATSV2': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.9]},
+    'DAPHNET': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.7]},
+    'EXATHLON': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.8]},
+    'IOPS': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.5]},
+    'LTDB': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.9]},
+    'MGAB': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.2]},
+    'MITDB': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.3]},
+    'MSL': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.5]},
+    'NAB': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.4]},
+    'NEK': {'win_size': [64], 'fusion': ['add'], 'weight': [0.99]},
+    'OPPORTUNITY': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.5]},
+    'POWER': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.3]},
+    'SED': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.8]},
+    'SMAP': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.6]},
+    'SMD': {'win_size': [512], 'fusion': ['add'], 'weight': [0.99]},
+    'STOCK': {'win_size': [64], 'fusion': ['add'], 'weight': [0.99]},
+    'SVDB': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.8]},
+    'SWAT': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.7]},
+    'TAO': {'win_size': [512], 'fusion': ['add'], 'weight': [0.99]},
+    'TODS': {'win_size': [64], 'fusion': ['add'], 'weight': [0.1]},
+    'UCR': {'win_size': [512], 'fusion': ['add'], 'weight': [0.1]},
+    'WSD': {'win_size': [512], 'fusion': ['mul'], 'weight': [0.99]},
+    'YAHOO': {'win_size': [64], 'fusion': ['mul'], 'weight': [0.01]}}
+
 
 
 seed = 2024
@@ -62,6 +61,7 @@ np.random.seed(seed)
 random.seed(seed)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
+
 
 
 def resolve_path(path):
@@ -133,6 +133,7 @@ def evaluate_one(args, filename):
     params = dict(
         win_size=hp_scalar(config, "win_size"),
         weight=hp_scalar(config, "weight"),
+        fusion=hp_scalar(config, "fusion"),
         lr_adapter=args.lr_adapter,
         epochs_adapter=args.epochs_adapter,
         adapter_mode=args.adapter_mode,
@@ -178,15 +179,14 @@ def write_outputs(save_dir, ad_name, rows, elapsed):
         "mean_vus_pr": float(np.nanmean(values)) if len(values) else float("nan"),
         "median_vus_pr": float(np.nanmedian(values)) if len(values) else float("nan"),
         "elapsed_sec": float(elapsed),
-        "config": "eps01_zscore_add_source_level",
+        "config": "addmul_aucpr_0616_weight_fusion_source_level",
     }
     (save_dir / f"{ad_name}_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     return result_csv, summary
 
-
 def main():
     start_t = time.time()
-    parser = argparse.ArgumentParser(description="HP Tuning for fixed TimeRCD + MultiAdapter VUS-PR fusion")
+    parser = argparse.ArgumentParser(description="HP Tuning for TimeRCD-MAFT add/mul VUS-PR fusion")
     parser.add_argument("--dataset_dir", type=str, default="Datasets/TSB-AD-U")
     parser.add_argument("--file_lsit", "--file_list", dest="file_list", type=str, default="Datasets/File_List/TSB-AD-U-Eva.csv")
     parser.add_argument("--save_dir", type=str, default="benchmark_exp/eval/HP_tuning/uni_ma_eps01")
@@ -200,7 +200,7 @@ def main():
             "score: use cached .npy; auto: checkpoint then score fallback."
         ),
     )
-    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--lr_adapter", type=float, default=0.001)
     parser.add_argument("--epochs_adapter", type=int, default=5)
     parser.add_argument(
