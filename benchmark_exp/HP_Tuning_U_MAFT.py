@@ -64,73 +64,6 @@ torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
 
-
-def main():
-    start_t = time.time()
-    parser = argparse.ArgumentParser(description="HP Tuning for fixed TimeRCD + MultiAdapter VUS-PR fusion")
-    parser.add_argument("--dataset_dir", type=str, default="Datasets/TSB-AD-U")
-    parser.add_argument("--file_lsit", "--file_list", dest="file_list", type=str, default="Datasets/File_List/TSB-AD-U-Eva.csv")
-    parser.add_argument("--save_dir", type=str, default="benchmark_exp/eval/HP_tuning/uni_ma_eps01")
-    parser.add_argument("--AD_Name", type=str, default="TimeRCD_MAFT")
-    parser.add_argument(
-        "--adapter_mode",
-        choices=["train", "checkpoint", "score", "auto"],
-        default="train",
-        help=(
-            "train: fit MultiAdapter on the prefix; checkpoint: infer from .pt; "
-            "score: use cached .npy; auto: checkpoint then score fallback."
-        ),
-    )
-    parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--lr_adapter", type=float, default=0.001)
-    parser.add_argument("--epochs_adapter", type=int, default=5)
-    parser.add_argument(
-        "--adapter_checkpoint_dir",
-        type=str,
-        default="checkpoints/MAFT",
-    )
-    parser.add_argument("--timercd_win_size", type=int, default=15000)
-    parser.add_argument("--timercd_checkpoint", type=str, default="checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth")
-    parser.add_argument("--limit", type=int, default=0)
-    args = parser.parse_args()
-
-    args.dataset_dir = resolve_path(args.dataset_dir)
-    args.file_list = resolve_path(args.file_list)
-    args.adapter_checkpoint_dir = resolve_path(args.adapter_checkpoint_dir)
-    args.timercd_checkpoint = resolve_path(args.timercd_checkpoint)
-    args.save_dir = resolve_path(args.save_dir)
-
-    print("CUDA available: ", torch.cuda.is_available())
-    print("cuDNN version: ", torch.backends.cudnn.version())
-    print(f"Adapter mode: {args.adapter_mode}")
-    print(f"TimeRCD win_size: {args.timercd_win_size}")
-    print(f"Metric: VUS-PR")
-
-    file_list = pd.read_csv(args.file_list)["file_name"].tolist()
-    if args.limit > 0:
-        file_list = file_list[: args.limit]
-
-    rows = []
-    for index, filename in enumerate(file_list, start=1):
-        print(f"[{index}/{len(file_list)}] Processing:{filename} by {args.AD_Name}", flush=True)
-        row = evaluate_one(args, filename)
-        print("VUS-PR: ", row["VUS-PR"], flush=True)
-        rows.append(row)
-
-        result_csv, _ = write_outputs(args.save_dir, args.AD_Name, rows, time.time() - start_t)
-        print(f"Temp saved: {result_csv}", flush=True)
-
-    result_csv, summary = write_outputs(args.save_dir, args.AD_Name, rows, time.time() - start_t)
-    print(json.dumps(summary, indent=2))
-    print(f"Wrote results to {result_csv}")
-    print("Total time cost: {:.3f}s".format(time.time() - start_t))
-
-
-if __name__ == "__main__":
-    main()
-
-
-
 def resolve_path(path):
     path = Path(path)
     candidates = [path, REPO_ROOT / path]
@@ -249,3 +182,68 @@ def write_outputs(save_dir, ad_name, rows, elapsed):
     }
     (save_dir / f"{ad_name}_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     return result_csv, summary
+
+
+def main():
+    start_t = time.time()
+    parser = argparse.ArgumentParser(description="HP Tuning for fixed TimeRCD + MultiAdapter VUS-PR fusion")
+    parser.add_argument("--dataset_dir", type=str, default="Datasets/TSB-AD-U")
+    parser.add_argument("--file_lsit", "--file_list", dest="file_list", type=str, default="Datasets/File_List/TSB-AD-U-Eva.csv")
+    parser.add_argument("--save_dir", type=str, default="benchmark_exp/eval/HP_tuning/uni_ma_eps01")
+    parser.add_argument("--AD_Name", type=str, default="TimeRCD_MAFT")
+    parser.add_argument(
+        "--adapter_mode",
+        choices=["train", "checkpoint", "score", "auto"],
+        default="train",
+        help=(
+            "train: fit MultiAdapter on the prefix; checkpoint: infer from .pt; "
+            "score: use cached .npy; auto: checkpoint then score fallback."
+        ),
+    )
+    parser.add_argument("--device", type=str, default="cuda:0")
+    parser.add_argument("--lr_adapter", type=float, default=0.001)
+    parser.add_argument("--epochs_adapter", type=int, default=5)
+    parser.add_argument(
+        "--adapter_checkpoint_dir",
+        type=str,
+        default="checkpoints/MAFT",
+    )
+    parser.add_argument("--timercd_win_size", type=int, default=15000)
+    parser.add_argument("--timercd_checkpoint", type=str, default="checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth")
+    parser.add_argument("--limit", type=int, default=0)
+    args = parser.parse_args()
+
+    args.dataset_dir = resolve_path(args.dataset_dir)
+    args.file_list = resolve_path(args.file_list)
+    args.adapter_checkpoint_dir = resolve_path(args.adapter_checkpoint_dir)
+    args.timercd_checkpoint = resolve_path(args.timercd_checkpoint)
+    args.save_dir = resolve_path(args.save_dir)
+
+    print("CUDA available: ", torch.cuda.is_available())
+    print("cuDNN version: ", torch.backends.cudnn.version())
+    print(f"Adapter mode: {args.adapter_mode}")
+    print(f"TimeRCD win_size: {args.timercd_win_size}")
+    print(f"Metric: VUS-PR")
+
+    file_list = pd.read_csv(args.file_list)["file_name"].tolist()
+    if args.limit > 0:
+        file_list = file_list[: args.limit]
+
+    rows = []
+    for index, filename in enumerate(file_list, start=1):
+        print(f"[{index}/{len(file_list)}] Processing:{filename} by {args.AD_Name}", flush=True)
+        row = evaluate_one(args, filename)
+        print("VUS-PR: ", row["VUS-PR"], flush=True)
+        rows.append(row)
+
+        result_csv, _ = write_outputs(args.save_dir, args.AD_Name, rows, time.time() - start_t)
+        print(f"Temp saved: {result_csv}", flush=True)
+
+    result_csv, summary = write_outputs(args.save_dir, args.AD_Name, rows, time.time() - start_t)
+    print(json.dumps(summary, indent=2))
+    print(f"Wrote results to {result_csv}")
+    print("Total time cost: {:.3f}s".format(time.time() - start_t))
+
+
+if __name__ == "__main__":
+    main()
