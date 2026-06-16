@@ -59,42 +59,6 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-If PyTorch is not installed correctly for CUDA, install a CUDA-compatible PyTorch build first, then rerun the package install.
-
-Quick import check:
-
-```bash
-python -c "import TSB_AD.models.TimeRCD_MAFT as m; print(m.__file__)"
-```
-
-Expected output should end with:
-
-```text
-TSB_AD/models/TimeRCD_MAFT.cpython-311-x86_64-linux-gnu.so
-```
-
-## Usage Script
-
-The main entry point is:
-
-```text
-benchmark_exp/HP_Tuning_U_MA.py
-```
-
-It runs TimeRCD + MAFT score fusion on the univariate TSB-AD evaluation list.
-
-The script reads file names from:
-
-```text
-Datasets/File_List/TSB-AD-U-Eva.csv
-```
-
-The default dataset directory is:
-
-```text
-Datasets/TSB-AD-U
-```
-
 ## Data Preparation
 
 Download the univariate TSB-AD-U dataset from the official TSB-AD release:
@@ -111,32 +75,6 @@ wget -O Datasets/TSB-AD-U.zip https://www.thedatum.org/datasets/TSB-AD-U.zip
 unzip Datasets/TSB-AD-U.zip -d Datasets/
 ```
 
-After extraction, the dataset CSV files should be available under:
-
-```text
-Datasets/TSB-AD-U/
-```
-
-The benchmark uses the evaluation split file:
-
-```text
-Datasets/File_List/TSB-AD-U-Eva.csv
-```
-
-If the file list is missing, download it from the official TSB-AD repository and place it under `Datasets/File_List/`:
-
-```bash
-mkdir -p Datasets/File_List
-wget -O Datasets/File_List/TSB-AD-U-Eva.csv \
-  https://raw.githubusercontent.com/TheDatumOrg/TSB-AD/main/Datasets/File_List/TSB-AD-U-Eva.csv
-```
-
-You can verify the dataset layout with:
-
-```bash
-ls Datasets/TSB-AD-U | head
-test -f Datasets/File_List/TSB-AD-U-Eva.csv
-```
 
 ## Checkpoint Preparation
 
@@ -179,11 +117,17 @@ Use checkpoint mode when you want to run MAFT from saved adapter weights:
 
 ```bash
 cd /root/TSB-AD-Fork/TSB-AD
-python benchmark_exp/HP_Tuning_U_MA.py \
+python benchmark_exp/HP_Tuning_U_MAFT.py \
   --limit 1 \
   --adapter_mode checkpoint \
   --device cuda:0 \
   --save_dir logs
+```
+
+For reference results, see:
+
+```text
+benchmark_exp/leaderboard_results/Uni_TimeRCD_MAFT.csv
 ```
 
 ## Run With On-The-Fly MAFT Training
@@ -192,57 +136,9 @@ Use train mode when you want to train the MAFT adapter from the prefix split enc
 
 ```bash
 cd /root/TSB-AD-Fork/TSB-AD
-python benchmark_exp/HP_Tuning_U_MA.py \
+python benchmark_exp/HP_Tuning_U_MAFT.py \
   --limit 1 \
   --adapter_mode train \
   --device cuda:0 \
   --save_dir logs
 ```
-
-
-## Key Arguments
-
-```text
---limit
-    Number of datasets to run. Use 1 for a smoke test. Use 0 or omit it for all files.
-
---adapter_mode
-    train: train MAFT from the prefix split.
-    checkpoint: load MAFT weights from checkpoints/MAFT.
-    score: load cached MAFT scores if available.
-    auto: checkpoint first, then score fallback.
-
---device
-    CUDA device string, for example cuda:0 or cuda:6.
-
---save_dir
-    Directory for CSV and summary outputs.
-
---adapter_checkpoint_dir
-    MAFT checkpoint directory. Default: checkpoints/MAFT.
-
---timercd_checkpoint
-    TimeRCD checkpoint. Default: checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth.
-```
-
-## Troubleshooting
-
-If import fails, confirm the `.so` is loaded:
-
-```bash
-python -c "import TSB_AD.models.TimeRCD_MAFT as m; print(m.__file__)"
-```
-
-If checkpoint mode fails, check that the corresponding file exists under:
-
-```text
-checkpoints/MAFT/
-```
-
-If CUDA device selection looks unexpected, check available GPUs:
-
-```bash
-nvidia-smi
-```
-
-If the Python version is not 3.11, rebuild the `.so` for the active Python environment or switch to the matching `TSB-AD` conda environment.
