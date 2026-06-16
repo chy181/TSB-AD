@@ -1,33 +1,14 @@
 import math
+
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-import traceback
 
 from .utils.slidingWindows import find_length_rank
 
-def _align_score_length(score, target_len):
-    score = np.asarray(score, dtype=float).reshape(-1)
-    if score.shape[0] == target_len:
-        return score
-    if score.shape[0] == 0:
-        return np.zeros(target_len, dtype=float)
-    if score.shape[0] < target_len:
-        pad_len = target_len - score.shape[0]
-        return np.pad(score, (pad_len, 0), mode="edge")
-    return score[:target_len]
-
-
-def _minmax_normalize(score):
-    score = np.asarray(score, dtype=float).reshape(-1)
-    score_min = np.min(score)
-    score_max = np.max(score)
-    return (score - score_min) / (score_max - score_min + 1e-8)
-
-
 Unsupervise_AD_Pool = ['FFT', 'SR', 'NORMA', 'Series2Graph', 'Sub_IForest', 'IForest', 'LOF', 'Sub_LOF', 'POLY', 'MatrixProfile', 'Sub_PCA', 'PCA', 'HBOS',
-                        'Sub_HBOS', 'KNN', 'Sub_KNN','KMeansAD', 'KMeansAD_U', 'KShapeAD', 'COPOD', 'CBLOF', 'COF', 'EIF', 'RobustPCA', 'MMPAD', 'Lag_Llama', 'TimesFM', 'Chronos', 'MOMENT_ZS', 'TSPulse_ZS', 'Time_RCD', 'Time_RCD_1w', "Time_RCD_8000", "Time_RCD_5000", "Time_RCD_2000", "Time_RCD_1000"]
+                        'Sub_HBOS', 'KNN', 'Sub_KNN','KMeansAD', 'KMeansAD_U', 'KShapeAD', 'COPOD', 'CBLOF', 'COF', 'EIF', 'RobustPCA', 'MMPAD', 'Lag_Llama', 'TimesFM', 'Chronos', 'MOMENT_ZS', 'TSPulse_ZS', 'Time_RCD', 'HSF_U', 'HSF_Causal']
 Semisupervise_AD_Pool = ['Left_STAMPi', 'SAND', 'MCD', 'Sub_MCD', 'OCSVM', 'Sub_OCSVM', 'AutoEncoder', 'CNN', 'LSTMAD', 'TranAD', 'USAD', 'OmniAnomaly', 'PatchTST',
-                        'AnomalyTransformer', 'TimesNet', 'FITS', 'Donut', 'OFA', 'MOMENT_FT', 'M2N2', 'TSPulse_FT', 'xLSTMAD', 'CHARM', 'TimeRCD_MAFT']
+                        'AnomalyTransformer', 'TimesNet', 'FITS', 'Donut', 'OFA', 'MOMENT_FT', 'M2N2', 'TSPulse_FT', 'xLSTMAD', 'CHARM', 'StreamVAE', 'HSF', 'PaAno_PAI', 'SHADE', 'TimeRCD_MAFT']
 
 def run_Unsupervise_AD(model_name, data, **kwargs):
     try:
@@ -58,10 +39,6 @@ def run_Semisupervise_AD(model_name, data_train, data_test, **kwargs):
     except Exception as e:
         error_message = f"An error occurred while running the model '{function_name}': {str(e)}"
         print(error_message)
-
-        # 关键：打印完整 traceback
-        traceback.print_exc()
-
         return error_message
 
 def run_FFT(data, ifft_parameters=5, local_neighbor_window=21, local_outlier_threshold=0.6, max_region_size=50, max_sign_change_distance=10):
@@ -413,8 +390,8 @@ def run_Time_RCD(data,
                  win_size=15000,
                  batch_size=64,
                  device=None,
-                 checkpoint="/root/TSB-AD/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TSB-AD/checkpoints/time-rcd",
+                 checkpoint=None,
+                 model_id="thu-sail-lab/Time-RCD",
                  cache_dir=None):
     from .models.Time_RCD import Time_RCD
     clf = Time_RCD(
@@ -515,6 +492,95 @@ def run_TSPulse_FT(data_train,
     score = clf.decision_function(data_test)
     return score.ravel()
 
+
+def run_xLSTMAD(data_train, data_test, window_size=100, lr=0.005, batch_size=32, embedding_dim=40):
+    from .models.xLSTMAD import xLSTMAD, xLSTMADModule
+    model = xLSTMADModule(embedding_dim=embedding_dim, window_size=window_size, lr=lr, features_no=data_test.shape[1])
+    clf = xLSTMAD(model=model, window_size=window_size, batch_size=batch_size)
+    clf.fit(data_train)
+    score = clf.decision_function(data_test)
+    return score.ravel()
+
+
+def run_MMPAD(data, periodicity=1, n_dim=None, n_neighbor=1,
+              sorting_place='pre', mode='discord', post_processing=2, 
+              n_job=None, backend=None):
+    from .models.MMPAD import MMPAD
+    clf = MMPAD(periodicity=periodicity, n_dim=n_dim, n_neighbor=n_neighbor,
+                sorting_place=sorting_place, mode=mode, post_processing=post_processing, 
+                n_job=n_job, backend=backend)
+    clf.fit(data)
+    score = clf.decision_scores_
+    return score.ravel()
+
+def run_StreamVAE(data_train, data_test, win_size=100, latent_dim=64, batch_size=128, epochs=50,
+                  patience=10, lr=1e-3, validation_size=0.2, target_kl=100.0, event_l1_weight=1e-3):
+    from .models.StreamVAE import StreamVAE
+    eps = 1e-8
+    mu = data_train.mean(axis=0, keepdims=True)
+    sd = data_train.std(axis=0, keepdims=True)
+    sd = np.where(sd == 0, eps, sd)
+    data_train_n = (data_train - mu) / sd
+    data_test_n = (data_test - mu) / sd
+    clf = StreamVAE(
+        win_size=win_size, feats=data_test.shape[1], latent_dim=latent_dim,
+        batch_size=batch_size, epochs=epochs, patience=patience, lr=lr,
+        validation_size=validation_size, target_kl=target_kl, event_l1_weight=event_l1_weight,
+    )
+    clf.fit(data_train_n)
+    score = clf.decision_function(data_test_n)
+    return score.ravel()
+
+
+def run_SHADE(data_train, data_test, **kwargs):
+    from .models.SHADE_AD import run_SHADE_AD_Semisupervised
+    return run_SHADE_AD_Semisupervised(data_train, data_test, HP=kwargs).ravel()
+
+def run_PaAno_PAI(data_train, data_test, **kwargs):
+    from .models.PaAno_PAI import run_PaAno_PAI_Semisupervised
+    return run_PaAno_PAI_Semisupervised(data_train, data_test, kwargs).ravel()
+
+def run_HSF(data_train, data_test, **kwargs):
+    from .models.HSF_AD import run_HSF_AD_Semisupervised
+    return run_HSF_AD_Semisupervised(data_train, data_test, HP=kwargs).ravel()
+
+def run_HSF_U(data, **kwargs):
+    from .models.HSF_AD import run_HSF_AD_Unsupervised
+    return run_HSF_AD_Unsupervised(data, HP=kwargs).ravel()
+
+def run_HSF_Causal(data, **kwargs):
+    from .models.HSF_AD import run_HSF_AD_Causal
+    return run_HSF_AD_Causal(data, HP=kwargs).ravel()
+
+
+def run_CHARM(
+    data_train,
+    data_test,
+    window_size=128,
+    k=3,
+    pointwise_agg="mean",
+    stride=1,
+    train_stride=1,
+    min_window=64,
+):
+    from .models.CHARM import CHARM_AD
+    """Semisupervised runner — matches TSB-AD's run_Semisupervise_AD dispatcher."""
+    clf = CHARM_AD(
+        HP={},
+        window_size=window_size,
+        stride=stride,
+        k=k,
+        pointwise_agg=pointwise_agg,
+        train_stride=train_stride,
+        min_window=min_window,
+    )
+    clf.fit(data_train)
+    score = clf.decision_function(data_test)
+    score = (
+        MinMaxScaler(feature_range=(0, 1)).fit_transform(score.reshape(-1, 1)).ravel()
+    )
+    return score
+
 def run_TimeRCD_MAFT_FT(
     data_train,
     data_test,
@@ -552,52 +618,3 @@ def run_TimeRCD_MAFT_FT(
 
 def run_TimeRCD_MAFT(*args, **kwargs):
     return run_TimeRCD_MAFT_FT(*args, **kwargs)
-
-
-def run_xLSTMAD(data_train, data_test, window_size=100, lr=0.005, batch_size=32, embedding_dim=40):
-    from .models.xLSTMAD import xLSTMAD, xLSTMADModule
-    model = xLSTMADModule(embedding_dim=embedding_dim, window_size=window_size, lr=lr, features_no=data_test.shape[1])
-    clf = xLSTMAD(model=model, window_size=window_size, batch_size=batch_size)
-    clf.fit(data_train)
-    score = clf.decision_function(data_test)
-    return score.ravel()
-
-
-def run_MMPAD(data, periodicity=1, n_dim=None, n_neighbor=1,
-              sorting_place='pre', mode='discord', post_processing=2, 
-              n_job=None, backend=None):
-    from .models.MMPAD import MMPAD
-    clf = MMPAD(periodicity=periodicity, n_dim=n_dim, n_neighbor=n_neighbor,
-                sorting_place=sorting_place, mode=mode, post_processing=post_processing, 
-                n_job=n_job, backend=backend)
-    clf.fit(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
-def run_CHARM(
-    data_train,
-    data_test,
-    window_size=128,
-    k=3,
-    pointwise_agg="mean",
-    stride=1,
-    train_stride=1,
-    min_window=64,
-):
-    from .models.CHARM import CHARM_AD
-    """Semisupervised runner — matches TSB-AD's run_Semisupervise_AD dispatcher."""
-    clf = CHARM_AD(
-        HP={},
-        window_size=window_size,
-        stride=stride,
-        k=k,
-        pointwise_agg=pointwise_agg,
-        train_stride=train_stride,
-        min_window=min_window,
-    )
-    clf.fit(data_train)
-    score = clf.decision_function(data_test)
-    score = (
-        MinMaxScaler(feature_range=(0, 1)).fit_transform(score.reshape(-1, 1)).ravel()
-    )
-    return score
