@@ -35,7 +35,7 @@ Add one `Run_Custom_Detector.py`-style file in this folder (see `Run_Custom_Dete
     * `Optimal_Uni_algo_HP_dict` / `Optimal_Multi_algo_HP_dict` — the single best config used by `Run_Detector_U/M.py` (required)
     * `Uni_algo_HP_dict` / `Multi_algo_HP_dict` — the search grid used by `HP_Tuning_U/M.py` (optional)
 * **Step 4**: Apply a threshold to the anomaly score (if any)
-* **Step 5**: Verify with `Run_Detector_U.py`/`Run_Detector_M.py` and submit your evaluation results [here](https://github.com/TheDatumOrg/TSB-AD/tree/main/benchmark_exp); once verified we will add it to the [🏆 Leaderboard](https://thedatumorg.github.io/TSB-AD/#leaderboard)
+* **Step 5**: Verify with `Run_Detector_U.py`/`Run_Detector_M.py` and submit your evaluation results [here](https://github.com/thedatumorg/TSB-AD/tree/main/benchmark_exp/leaderboard_results); once verified we will add it to the [🏆 Leaderboard](https://thedatumorg.github.io/TSB-AD/#leaderboard)
 
 > 💡 Models are imported lazily inside `model_wrapper.py` (e.g. `from .models.Custom_AD import Custom_AD`), so a heavy or optional dependency only loads when its detector is actually selected.
 
