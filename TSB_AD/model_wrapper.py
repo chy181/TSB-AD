@@ -812,6 +812,7 @@ def run_TimeRCD_MAFT_FT(
     epochs_adapter=5,
     adapter_mode="train",
     device="cuda:0",
+    adapter_checkpoint_dir="checkpoints/MAFT",
     timercd_win_size=15000,
     timercd_checkpoint="checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
     filename=None,
@@ -831,6 +832,7 @@ def run_TimeRCD_MAFT_FT(
         epochs_adapter=epochs_adapter,
         mode=adapter_mode,
         device=device,
+        adapter_checkpoint_dir=adapter_checkpoint_dir,
         timercd_win_size=timercd_win_size,
         timercd_checkpoint=timercd_checkpoint,
     ).ravel()
