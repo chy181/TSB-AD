@@ -430,111 +430,6 @@ def run_Time_RCD(data,
     score = clf.decision_scores_
     return score.ravel()
 
-def run_Time_RCD_1w(data,
-                 win_size=10000,
-                 batch_size=64,
-                 device=None,
-                 checkpoint="/root/TSB-AD-Adapter/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TSB-AD-Adapter/checkpoints/time-rcd",
-                 cache_dir=None):
-    from .models.Time_RCD import Time_RCD
-    clf = Time_RCD(
-        win_size=win_size,
-        input_c=data.shape[1],
-        batch_size=batch_size,
-        device=device,
-        checkpoint=checkpoint,
-        model_id=model_id,
-        cache_dir=cache_dir,
-    )
-    clf.zero_shot(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
-def run_Time_RCD_8000(data,
-                 win_size=8000,
-                 batch_size=64,
-                 device=None,
-                 checkpoint="/root/TSB-AD-Adapter/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TTSB-AD-Adapter/checkpoints/time-rcd",
-                 cache_dir=None):
-    from .models.Time_RCD import Time_RCD
-    clf = Time_RCD(
-        win_size=win_size,
-        input_c=data.shape[1],
-        batch_size=batch_size,
-        device=device,
-        checkpoint=checkpoint,
-        model_id=model_id,
-        cache_dir=cache_dir,
-    )
-    clf.zero_shot(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
-def run_Time_RCD_5000(data,
-                 win_size=5000,
-                 batch_size=64,
-                 device=None,
-                 checkpoint="/root/TSB-AD-Adapter/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TSB-AD-Adapter/checkpoints/time-rcd",
-                 cache_dir=None):
-    from .models.Time_RCD import Time_RCD
-    clf = Time_RCD(
-        win_size=win_size,
-        input_c=data.shape[1],
-        batch_size=batch_size,
-        device=device,
-        checkpoint=checkpoint,
-        model_id=model_id,
-        cache_dir=cache_dir,
-    )
-    clf.zero_shot(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
-def run_Time_RCD_2000(data,
-                 win_size=2000,
-                 batch_size=64,
-                 device=None,
-                 checkpoint="/root/TSB-AD-Adapter/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TSB-AD-Adapter/checkpoints/time-rcd",
-                 cache_dir=None):
-    from .models.Time_RCD import Time_RCD
-    clf = Time_RCD(
-        win_size=win_size,
-        input_c=data.shape[1],
-        batch_size=batch_size,
-        device=device,
-        checkpoint=checkpoint,
-        model_id=model_id,
-        cache_dir=cache_dir,
-    )
-    clf.zero_shot(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
-def run_Time_RCD_1000(data,
-                 win_size=1000,
-                 batch_size=64,
-                 device=None,
-                 checkpoint="/root/TSB-AD-Adapter/checkpoints/time-rcd/pretrain_checkpoint_best_uni.pth",
-                 model_id="/root/TSB-AD-Adapter/checkpoints/time-rcd",
-                 cache_dir=None):
-    from .models.Time_RCD import Time_RCD
-    clf = Time_RCD(
-        win_size=win_size,
-        input_c=data.shape[1],
-        batch_size=batch_size,
-        device=device,
-        checkpoint=checkpoint,
-        model_id=model_id,
-        cache_dir=cache_dir,
-    )
-    clf.zero_shot(data)
-    score = clf.decision_scores_
-    return score.ravel()
-
 def run_MOMENT_FT(data_train, data_test, win_size=256):
     from .models.MOMENT import MOMENT
     clf = MOMENT(win_size=win_size, input_c=data_test.shape[1])
@@ -620,11 +515,6 @@ def run_TSPulse_FT(data_train,
     score = clf.decision_function(data_test)
     return score.ravel()
 
-
-
-"""
-联合训练；实现adapter
-"""
 def run_TimeRCD_MAFT_FT(
     data_train,
     data_test,
